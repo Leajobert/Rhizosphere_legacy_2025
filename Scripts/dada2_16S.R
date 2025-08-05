@@ -29,6 +29,21 @@ install.packages("microbial")
 BiocManager::install("edgeR")
 install.packages("metagMisc")
 
+n#for Tax4Fun, install manually (download archive from http://tax4fun.gobics.de/)
+#Tax4Fun_0.3.1.tar.gz
+#install qiime2R
+devtools::install_github("jbisanz/qiime2R")
+
+#Barplots & Venn diagram packages
+install.packages("microbiome")
+
+install.packages("git2r")
+install.packages("remotes")
+remotes::install_github("Russel88/MicEco")
+
+
+
+
 #Load libraries
 
 library(phyloseq)
@@ -48,23 +63,22 @@ library(Tax4Fun)
 library(qiime2R)
 library("MicEco")
 
-setwd("yourpath/ITS/fastq")
+setwd("your_path/16S")
 
 #starting the dada2 pipeline
-path <- "yourpath/ITS/fastq"  #CHANGE ME to the directory containing the fastq files after unzipping.
+path <- "your_path/16S"  #CHANGE ME to the directory containing the fastq files after unzipping.
 list.files(path)
 
-#DETECT AND REMOVE PRIMERS
+
+
 # Forward and reverse fastq filenames have format: SAMPLENAME-16S_1.fastq and SAMPLENAME-16S_2.fastq
 fnFs <- sort(list.files(path, pattern="_1.fastq", full.names = TRUE))
 fnRs <- sort(list.files(path, pattern="_2.fastq", full.names = TRUE))
 # Extract sample names, assuming filenames have format: SAMPLENAME_XXX.fastq
-sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`,1)
+sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
 sample.names
-
-
 #Inspect read quality profiles
-plotQualityProfile(fnFs[33:34])
+plotQualityProfile(fnFs[1:2])
 
 plotQualityProfile(fnRs[1:2])
 
@@ -76,27 +90,25 @@ filtRs <- file.path(path, "filtered", paste0(sample.names, "_R_filt.fastq.gz"))
 names(filtFs) <- sample.names
 names(filtRs) <- sample.names
 
-#Filter:
-out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(280,205), maxN=0, maxEE=c(2,2), trimLeft = c(20, 20), truncQ=2, rm.phix=TRUE,compress=TRUE,  multithread=FALSE)
+#Filter:  Macrogen 16S primers are 341F :  CCTACGGGNGGCWGCAG (17 nt) and  805R GACTACHVGGGTATCTAATCC (21 nt)
+
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(280,205), maxN=0, maxEE=c(2,2), trimLeft = c(17, 21), truncQ=2, rm.phix=TRUE,compress=TRUE,  multithread=FALSE)
 # On Windows set multithread=FALSE; attention ici on trime les primers de 20 pb en amont de chaque sequence for et Rev (trimleft)
 
 
 head(out) 
-write.csv(out, "Stat_filteringITS_SBL.csv")
-
-
 #Learn the Error Rates
 
-errF <- learnErrors(filtFs, randomize= TRUE,  multithread=TRUE)
-errR <- learnErrors(filtRs, randomize= TRUE, multithread=TRUE)
+errF <- learnErrors(filtFs, multithread=TRUE)
+errR <- learnErrors(filtRs, multithread=TRUE)
 
 plotErrors(errF, nominalQ=TRUE)
 plotErrors(errR, nominalQ=TRUE)
 
 #Sample Inference
-dadaFs <- dada(filtFs, err=errF, pool=FALSE, multithread=TRUE)
+dadaFs <- dada(filtFs, err=errF, multithread=TRUE)
 
-dadaRs <- dada(filtRs, err=errR, pool=FALSE, multithread=TRUE)
+dadaRs <- dada(filtRs, err=errR, multithread=TRUE)
 
 #Inspecting the returned dada-class object:
 dadaFs[[1]]
@@ -121,16 +133,23 @@ table(nchar(getSequences(seqtab)))
 ##   1  88 196   6   2
 
 #Remove non-target-length sequences from your sequence table (eg. seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% 250:256]). This is analogous to "cutting a band" in-silico to get amplicons of the targeted length. 
-seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% 260:433]
+seqtab2 <- seqtab[,nchar(colnames(seqtab)) %in% 380:435]
 
+saveRDS(seqtab, "16SLeaCambodia.RDS")
 
 #Remove chimeras
-seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
+seqtab.nochim <- removeBimeraDenovo(seqtab2, method="consensus", multithread=TRUE, verbose=TRUE)
 dim(seqtab.nochim)
+View(seqtab.nochim)
+
 
 ## [1]  20 232
-sum(seqtab.nochim)/sum(seqtab)
+sum(seqtab.nochim)/sum(seqtab2)
 ## [1] 0.964263
+
+write.csv(seqtab.nochim, "seqtab.nochim16SLeaCambodia.csv")
+saveRDS(seqtab.nochim, "seqtab.nochim16SLeaCambodia.RDS")
+
 
 #Track reads through the pipeline
 getN <- function(x) sum(getUniques(x))
@@ -139,29 +158,63 @@ colnames(track) <- c("input", "filtered", "denoisedF", "denoisedR", "merged", "n
 rownames(track) <- sample.names
 head(track)
 
-write.csv(track, "Stat_assemblyDADA2ITS.csv")
-saveRDS(seqtab.nochim, "seqtabnochim-ITS-Lea.RDS")
+write.csv(track, "Stat_assemblyDADA2_16SLeaCambodia.csv")
 
-
-seqtab.nochim <- readRDS(file="seqtabnochim-ITS-Lea.RDS")
-taxa <- readRDS(file="taxaITS-SBLnewtax.RDS")
 
 #Assign taxonomy (download first silva_nr_v132_train_set.fa.gz from silva website)
-taxa <- assignTaxonomy(seqtab.nochim, "yourpath../Taxonomic_databases/sh_general_release_dynamic_s_all_19.02.2025_dev.fasta", multithread=TRUE)
+taxa <- assignTaxonomy(seqtab.nochim, "your_path/Taxonomic_databases/silva_nr_v138_train_set.fa.gz", multithread=TRUE)
 
+#To add species information (download first silva_species_assignment_v132.fa.gz from silva website)
+taxa <- addSpecies(taxa, "your_path/Taxonomic_databases/silva_species_assignment_v138.fa.gz")
+
+
+#Assign taxonomy (different databses options given, most recent and updated is silva138)
+#taxa<- assignTaxonomy(seqtab.nochim, "C:/Users/moulinl/Documents/Scripts R/Taxonomic_databases/silva_nr_v132_train_set.fa.gz", multithread=TRUE)
+#taxa2 <- assignTaxonomy(seqtab.nochim, "C:/Users/moulinl/Documents/Scripts R/Taxonomic_databases/silva_nr_v138_train_set.fa.gz", multithread=TRUE)
+#taxa3 <- assignTaxonomy(seqtab.nochim, "C:/Users/moulinl/Documents/Scripts R/Taxonomic_databases/rdp_train_set_18.fa.gz", multithread=TRUE)
+
+#To add species information (download first silva_species_assignment_v132.fa.gz from silva website)
+#taxa1 <- addSpecies(taxa, "C:/Users/moulinl/Documents/Scripts R/Taxonomic_databases/silva_species_assignment_v132.fa.gz")
+#taxa2 <- addSpecies(taxa2, "C:/Users/moulinl/Documents/Scripts R/Taxonomic_databases/silva_species_assignment_v138.fa.gz")
+#taxa3 <- addSpecies(taxa3, "C:/Users/moulinl/Documents/Scripts R/Taxonomic_databases/rdp_species_assignment_18.fa.gz")
 
 #inspect the taxonomic assignments:
 taxa.print <- taxa # Removing sequence rownames for display only
 rownames(taxa.print) <- NULL
 head(taxa.print)
 
-View(sample.names)
+#save seqtab and taxa as RDS files (easier to reload later)
+saveRDS(taxa, file="taxa16S_LeaCambodge.RDS")
+saveRDS(seqtab.nochim, file="16Sseqtab.nochimLea.RDS")
+
+#load metadata file
+samdf <- read.csv2("your_path/metadata16S.csv")
+samdf
+
+all(rownames(seqtab.nochim) %in% samdf$sample_id) # TRUE pour verifier que les noms concordent
+
+rownames(samdf) <- samdf$sample_id
+keep.cols <- c("sample_id", "colname1", "colname2", "colname3", "colname4", "colname5") # to be changed with your colnames
+samdf <- samdf[rownames(seqtab.nochim), keep.cols]
+
+samples.out <- rownames(seqtab.nochim)
+rownames(samdf) <- samples.out
 
 
-saveRDS(taxa2, "taxaITS-SBLnewtaxsansSP.RDS")
+# check correespondance between samplenames between seqtab and samdf
+all(rownames(seqtab.nochim) %in% samdf$sample_id) # TRUE
+all(samdf$sample_id %in% rownames(seqtab.nochim)) # TRUE
 
-write.csv(taxa, "SBL_newannot.csv")
-write.csv(seqtab.nochim, "seqtab.nochim_geneticdiv.csv")
+# check correespondance between taxanames between seqtab and taxa
+all(colnames(seqtab.nochim) %in% rownames(taxa)) # TRUE
+all(rownames(taxa) %in% colnames(seqtab.nochim)) # TRUE
+
+#save in RDS format the seqtab 
+
+saveRDS(seqtab.nochim, "seqtab.nochim.RDS")
+saveRDS(taxa, "taxa.RDS")
+write.csv(taxa, "taxa.csv")
+write.csv(seqtab.nochim, "seqtab.nochim.csv")
 
 
 
@@ -171,5 +224,13 @@ seqtab6$ID <- rownames(seqtab6)
 taxa6<-as.data.frame(taxa)
 taxa6$ID <- rownames(taxa)
 all_data5  <- merge(taxa6,seqtab6,by='ID')
-write.csv(all_data5, "alldata_ITS_SBL_UNITE2025.csv")
+write.csv(all_data5, "Alldata_16S_LeaCambodia_silva138.csv")
 
+
+#phyloseq object without phylogenetic tree
+
+ps_16S <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
+                   sample_data(samdf), 
+                   tax_table(taxa))
+
+ps_16S
