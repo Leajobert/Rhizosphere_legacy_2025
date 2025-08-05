@@ -211,10 +211,10 @@ all(rownames(taxa) %in% colnames(seqtab.nochim)) # TRUE
 
 #save in RDS format the seqtab 
 
-saveRDS(seqtab.nochim, "seqtab.nochim.RDS")
-saveRDS(taxa, "taxa.RDS")
-write.csv(taxa, "taxa.csv")
-write.csv(seqtab.nochim, "seqtab.nochim.csv")
+saveRDS(seqtab.nochim, "seqtab.nochim16S.RDS")
+saveRDS(taxa, "taxa16S.RDS")
+write.csv(taxa, "taxa16S.csv")
+write.csv(seqtab.nochim, "seqtab.nochim16S.csv")
 
 
 
