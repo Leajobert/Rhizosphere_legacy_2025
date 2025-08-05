@@ -204,3 +204,19 @@ saveRDS(taxa, "taxaITS.RDS")
 write.csv(taxa, "taxaITS.csv")
 write.csv(seqtab.nochim, "seqtab.nochimITS.csv")
 
+# extract info in a single table (without metadata)
+seqtab6 <-as.data.frame(t(seqtab.nochim))
+seqtab6$ID <- rownames(seqtab6)
+taxa6<-as.data.frame(taxa)
+taxa6$ID <- rownames(taxa)
+all_data5  <- merge(taxa6,seqtab6,by='ID')
+write.csv(all_data5, "Alldata_16S_LeaCambodia_silva138.csv")
+
+
+#phyloseq object without phylogenetic tree
+
+ps_16S <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
+                   sample_data(samdf), 
+                   tax_table(taxa))
+
+ps_16S
