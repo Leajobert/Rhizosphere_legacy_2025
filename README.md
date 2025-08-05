@@ -8,5 +8,5 @@ For each dataset (16S and ITS), separate scripts are loaded, with the first scri
 
 
 The scripts for two figures have been provided separately as they are not specific to either 16S or ITS:
-  Figure 3: Heatmap of bacterial and fungal pathogens abundance in healthy and diseased rice leaves and Supplementary Figure   S2: Heatmap showing the abundance of bacterial and fungal taxa in healthy and diseased rice leaves.
-  Figure 5: Phenotype of new cycle rice plants grown on rhizosphere mixes derived from healthy or diseased field plants.
+  __Figure 3:__ Heatmap of bacterial and fungal pathogens abundance in healthy and diseased rice leaves and __Supplementary Figure   S2:__ Heatmap showing the abundance of bacterial and fungal taxa in healthy and diseased rice leaves.
+  __Figure 5:__ Phenotype of new cycle rice plants grown on rhizosphere mixes derived from healthy or diseased field plants.
