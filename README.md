@@ -1,4 +1,4 @@
-For each dataset (16S and ITS) scripts are loaded separatly, with a first script for DADA2 analysis and the a script including all following figures:
+For each dataset (16S and ITS), separate scripts are loaded, with the first script performing DADA2 analysis and the second script including all subsequent figures:
   Figure 1: Alpha and beta-diversity analyses of field sample microbiota.
   Figure 2: Top 30 microbial genera in the roots and rhizosphere of symptomatic and asymptomatic field rice.
   Figure 4: Comparison of microbiota between healthy and disease rhizosphere mix.
