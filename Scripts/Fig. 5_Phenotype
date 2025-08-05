@@ -1,0 +1,86 @@
+##fig 3 phenotype
+```{r}
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+library(car)
+library(rstatix)
+
+plant_data <- read.csv("C:/Users/2022lj002/Documents/Cambodge/SBL sequençage/Que_Xoo/SBL_phenotype_Xoo.csv", sep = ";", header = TRUE)
+
+plot_with_stats <- function(data, xvar, yvar, cond_levels, cond_labels, xlab, ylab, title_base, filename) {
+  
+  data_sub <- data %>% filter(!!sym(xvar) %in% cond_levels)
+  data_sub[[xvar]] <- factor(data_sub[[xvar]], levels = cond_levels, labels = cond_labels)
+  
+  # Tests normalité et homogénéité
+  shapiro <- shapiro.test(data_sub[[yvar]])
+  levene <- leveneTest(as.formula(paste(yvar, "~", xvar)), data = data_sub)
+  
+  if (shapiro$p.value > 0.05 & levene$`Pr(>F)`[1] > 0.05) {
+    aov_res <- aov(as.formula(paste(yvar, "~", xvar)), data = data_sub)
+    test_name <- "ANOVA"
+    p_val <- summary(aov_res)[[1]][["Pr(>F)"]][1]
+    stat_method <- "anova"
+  } else {
+    kw_res <- kruskal.test(as.formula(paste(yvar, "~", xvar)), data = data_sub)
+    test_name <- "Kruskal-Wallis"
+    p_val <- kw_res$p.value
+    stat_method <- "kruskal.test"
+  }
+  
+  n_per_group <- data_sub %>% group_by(!!sym(xvar)) %>% summarise(n = n(), mean_val = mean(!!sym(yvar), na.rm = TRUE))
+  total_n <- sum(n_per_group$n)
+  ratio <- round(n_per_group$mean_val[2] / n_per_group$mean_val[1], 2)
+  
+  # Affichage console avec stats détaillées
+  message("\n--- Summary for ", yvar, " ---")
+  print(n_per_group)
+  message("Ratio ", cond_labels[2], " / ", cond_labels[1], ": ", ratio)
+  message(test_name, " p-value: ", signif(p_val, 3))
+  message("Total n = 25")
+  
+  # Préparation du label p-value + test + n sous le titre
+  stat_label <- paste0(test_name, " p = ", signif(p_val, 3), " | n = 24 ")
+  
+  p <- ggplot(data_sub, aes_string(x = xvar, y = yvar, fill = xvar)) +
+    geom_boxplot() +
+    geom_jitter(width = 0.2, alpha = 0.6) +
+    stat_summary(fun = mean, geom = "point", shape = 8, size = 2, color = "white") +
+    scale_fill_manual(values = c("#3EBBA4", "#D52F20")) +
+    labs(x = xlab, y = ylab) +
+    theme_minimal() +
+    theme(legend.position = "none",
+          plot.title = element_text(hjust = 0.5, size=18),
+          plot.subtitle = element_text(hjust = 0.5, size = 15, face = "italic")) +
+    ggtitle(title_base, subtitle = stat_label) +  # p-value + test + n sous le titre
+    stat_compare_means(comparisons = list(cond_labels), label = "p.signif", label.y.npc = 1.1, size = 8, hide.ns = TRUE)
+  
+  ggsave(filename = filename, plot = p, path = "C:/Users/2022lj002/Documents/Cambodge/SBL sequençage/Que_Xoo/", width = 6, height = 8)
+}
+
+plot_with_stats(
+  data = plant_data,
+  xvar = "RhizoPatho",
+  yvar = "Size",
+  cond_levels = c("HealthyXoo", "DiseasedXoo"),
+  cond_labels = c("Rhizosphere mix of healthy plants", "Rhizosphere mix of diseased plants"),
+  xlab = "Rhizosphere mix used for growing plants in controlled conditions",
+  ylab = "Plant Size (cm)",
+  title_base = "Plant Size (in cm)",
+  filename = "Plant_Size_HealthyXoo_vs_DiseasedXoo.svg"
+)
+
+plot_with_stats(
+  data = plant_data,
+  xvar = "Rhizosphere",
+  yvar = "Dry",
+  cond_levels = c("Healthy", "Diseased"),
+  cond_labels = c("Rhizosphere mix of healthy plants", "Rhizosphere mix of diseased plants"),
+  xlab = "Rhizosphere mix used for growing plants in controlled conditions",
+  ylab = "Symptoms Length (cm)",
+  title_base = "Symptoms Length (in cm) following Xoo infection",
+  filename = "Symptoms_Length_Healthy_vs_Diseased_Rhizosphere.svg"
+)
+
+```
