@@ -172,3 +172,35 @@ taxa6<-as.data.frame(taxa)
 taxa6$ID <- rownames(taxa)
 all_data5  <- merge(taxa6,seqtab6,by='ID')
 write.csv(all_data5, "alldata_ITS_SBL_UNITE2025.csv")
+
+
+
+#load metadata file
+samdf <- read.csv2("your_path/metadataITS.csv")
+samdf
+
+all(rownames(seqtab.nochim) %in% samdf$sample_id) # TRUE pour verifier que les noms concordent
+
+rownames(samdf) <- samdf$sample_id
+keep.cols <- c("sample_id", "colname1", "colname2", "colname3", "colname4", "colname5") # to be changed with your colnames
+samdf <- samdf[rownames(seqtab.nochim), keep.cols]
+
+samples.out <- rownames(seqtab.nochim)
+rownames(samdf) <- samples.out
+
+
+# check correespondance between samplenames between seqtab and samdf
+all(rownames(seqtab.nochim) %in% samdf$sample_id) # TRUE
+all(samdf$sample_id %in% rownames(seqtab.nochim)) # TRUE
+
+# check correespondance between taxanames between seqtab and taxa
+all(colnames(seqtab.nochim) %in% rownames(taxa)) # TRUE
+all(rownames(taxa) %in% colnames(seqtab.nochim)) # TRUE
+
+#save in RDS format the seqtab 
+
+saveRDS(seqtab.nochim, "seqtab.nochimITS.RDS")
+saveRDS(taxa, "taxaITS.RDS")
+write.csv(taxa, "taxaITS.csv")
+write.csv(seqtab.nochim, "seqtab.nochimITS.csv")
+
