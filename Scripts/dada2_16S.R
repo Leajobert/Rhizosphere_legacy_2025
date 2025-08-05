@@ -1,5 +1,5 @@
 
-#                              ANALYSE MICROBOME DADA2 & PHYLOSEQ
+#                             16S_ANALYSE MICROBOME DADA2 & PHYLOSEQ
 
 # First install a recent version of Rstudio: https://www.rstudio.com/products/rstudio/download/#download
 
